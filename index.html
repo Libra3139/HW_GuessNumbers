@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐱 猜數字遊戲</title>
+
+    <!-- 引入 Vue 3 CDN（這樣就能用 Vue 的功能了） -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- 引入 Google Fonts 圓潤可愛字型 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* 讓網頁不要有奇怪的邊邊 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 設定整個網頁的字型 */
+        body {
+            font-family: 'Nunito', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* 點點背景：粉色底 + 白色圓點 */
+        body {
+            background-color: #ffe6ec;           /* 淡淡的粉紅色底 */
+            background-image: radial-gradient(     /* 用 CSS 畫圓點 */
+                white 12%,                        /* 圓點是白色的（變大了！） */
+                transparent 12%                   /* 圓點外面的部分是透明的 */
+            );
+            background-size: 40px 40px;           /* 每 40 像素放一個圓點 */
+        }
+
+        /* 讓內容置中 */
+        #app {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 遊戲卡片的樣式（白色框框） */
+        .game-card {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        /* 標題 */
+        h1 {
+            color: #ff8fab;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        /* ===== 小貓咪的 CSS 畫法 ===== */
+        
+        /* 小貓咪的家 */
+        .cat-area {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        /* 貓咪的臉（圓圓的） */
+        .cat-face {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(145deg, #fff5f7 0%, #ffe4ec 100%); /* 淡粉漸層 */
+            border-radius: 50%;
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 左邊耳朵 */
+        .cat-ear {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;   /* 左邊透明 */
+            border-right: 20px solid transparent;  /* 右邊透明 */
+            border-bottom: 35px solid #ffb6c1;     /* 底部是粉色 */
+            position: absolute;
+        }
+
+        .cat-ear.left {
+            top: 0;
+            left: 20px;
+            transform: rotate(-15deg);  /* 微微傾斜 */
+        }
+
+        .cat-ear.right {
+            top: 0;
+            right: 20px;
+            transform: rotate(15deg);   /* 微微傾斜 */
+        }
+
+        /* 耳朵內側（粉紅色小三角形） */
+        .cat-ear-inner {
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 15px solid #ffd1dc;
+            position: absolute;
+        }
+
+        .cat-ear-inner.left {
+            top: 12px;
+            left: 30px;
+            transform: rotate(-15deg);
+        }
+
+        .cat-ear-inner.right {
+            top: 12px;
+            right: 30px;
+            transform: rotate(15deg);
+        }
+
+        /* 眼睛（兩個圓點） */
+        .cat-eye {
+            width: 20px;
+            height: 24px;
+            background: #4a4a4a;
+            border-radius: 50%;
+            position: absolute;
+            top: 55px;
+        }
+
+        .cat-eye.left {
+            left: 35px;
+        }
+
+        .cat-eye.right {
+            right: 35px;
+        }
+
+        /* 眼睛裡的高光（小圓點） */
+        .cat-eye::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 5px;
+            left: 4px;
+        }
+
+        /* 嘴巴（一條線） */
+        .cat-mouth {
+            width: 20px;
+            height: 10px;
+            border: 3px solid #ff8fab;
+            border-top: none;
+            border-radius: 0 0 20px 20px;  /* 只圓下面 */
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);  /* 置中 */
+        }
+
+        /* 鬍子（左右各三條線） */
+        .cat-whisker {
+            position: absolute;
+            width: 25px;
+            height: 2px;
+            background: #ddd;
+            top: 85px;
+        }
+
+        .cat-whisker.l1 { left: -5px; transform: rotate(-10deg); }
+        .cat-whisker.l2 { left: -8px; top: 90px; transform: rotate(0deg); }
+        .cat-whisker.l3 { left: -5px; top: 95px; transform: rotate(10deg); }
+        .cat-whisker.r1 { right: -5px; transform: rotate(10deg); }
+        .cat-whisker.r2 { right: -8px; top: 90px; transform: rotate(0deg); }
+        .cat-whisker.r3 { right: -5px; top: 95px; transform: rotate(-10deg); }
+
+        /* ===== 不同的表情 ===== */
+
+        /* 睡覺表情：眼睛變成一條線 */
+        .cat-face.sleeping .cat-eye {
+            height: 4px;
+            top: 65px;
+            border-radius: 0;
+        }
+        .cat-face.sleeping .cat-eye::after {
+            display: none;
+        }
+
+        /* 睡覺時嘴巴變成愛心 */
+        .cat-face.sleeping .cat-mouth {
+            display: none;
+        }
+        .cat-face.sleeping .sleep-icon {
+            display: block;
+        }
+
+        /* ZZZ 睡覺符號 */
+        .sleep-icon {
+            display: none;
+            position: absolute;
+            font-size: 1.2rem;
+            color: #ffb6c1;
+            font-weight: 900;
+            top: 10px;
+            right: 25px;
+        }
+
+        /* 開心表情：眼睛變成 ^_^ */
+        .cat-face.happy .cat-eye {
+            height: 4px;
+            top: 65px;
+            border-radius: 0;
+            transform: rotate(0deg);
+        }
+        .cat-face.happy .cat-eye::after {
+            display: none;
+        }
+
+        /* 開心時嘴巴變大笑 */
+        .cat-face.happy .cat-mouth {
+            width: 30px;
+            height: 15px;
+            border-radius: 0 0 30px 30px;
+        }
+
+        /* ===== 太小了的表情（往上看的驚訝） ===== */
+        .cat-face.too-small .cat-eye {
+            transform: scale(1.2);       /* 眼睛變大（驚訝） */
+        }
+        .cat-face.too-small .cat-eye::after {
+            top: 3px;                   /* 高光往上移 */
+        }
+
+        /* ===== 太大了的表情（往下看的無奈） ===== */
+        .cat-face.too-big .cat-eye {
+            transform: scale(0.9) translateY(3px);  /* 眼睛變小往下看 */
+        }
+        .cat-face.too-big .cat-eye::after {
+            top: 8px;                   /* 高光往下移 */
+        }
+        .cat-face.too-big .cat-mouth {
+            transform: translateX(-50%) scale(0.8);  /* 嘴巴變小（無奈） */
+        }
+
+        /* 數字範圍顯示 */
+        .range-display {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        /* 數字範圍裡的數字（紅色強調） */
+        .range-number {
+            color: #ff6b9d;
+            font-weight: 900;
+            font-size: 1.4rem;
+        }
+
+        /* 輸入框 */
+        .guess-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1.5rem;
+            border: 3px solid #ffd1dc;
+            border-radius: 20px;
+            text-align: center;
+            font-family: 'Nunito', sans-serif;
+            outline: none;
+            margin-bottom: 15px;
+        }
+
+        /* 輸入框被點到的時候 */
+        .guess-input:focus {
+            border-color: #ff8fab;
+            box-shadow: 0 0 0 4px rgba(255, 143, 171, 0.2);
+        }
+
+        /* 猜測按鈕 */
+        .guess-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff8fab 0%, #ffb6c1 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Nunito', sans-serif;
+            box-shadow: 0 4px 15px rgba(255, 143, 171, 0.4);
+            margin-bottom: 15px;
+        }
+
+        /* 按鈕被滑鼠碰到的時候 */
+        .guess-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 143, 171, 0.6);
+        }
+
+        /* 按鈕被按下去的時候 */
+        .guess-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* 訊息顯示區 */
+        .message {
+            font-size: 1.3rem;
+            font-weight: 700;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            min-height: 55px;
+        }
+
+        /* 訊息：還沒開始的樣子 */
+        .message.idle {
+            background: #f0f0f0;
+            color: #888;
+        }
+
+        /* 訊息：太小了 */
+        .message.too-small {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        /* 訊息：太大了 */
+        .message.too-big {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* 訊息：猜對了 */
+        .message.correct {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        /* 猜測次數 */
+        .attempts {
+            font-size: 1rem;
+            color: #999;
+        }
+
+        /* 次數數字 */
+        .attempts-count {
+            color: #ff6b9d;
+            font-weight: 900;
+        }
+
+        /* ===== 動畫們 ===== */
+
+        /* 小貓咪跳躍動畫 */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }      /* 原本位置 */
+            50% { transform: translateY(-15px); }       /* 往上跳 */
+        }
+
+        /* 當猜對了，小貓咪會跳躍 */
+        .cat-area.celebrating {
+            animation: bounce 0.5s ease-in-out infinite;  /* 無限跳躍 */
+        }
+
+        /* 撒星星的動畫 */
+        @keyframes star-fall {
+            0% {
+                transform: translateY(-50px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(200px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* 星星的樣式 */
+        .stars-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;         /* 不會擋住點擊 */
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            font-size: 1.5rem;
+            animation: star-fall 1.5s ease-out forwards;  /* 掉下來然後消失 */
+        }
+
+        /* 訊息彈出動畫 */
+        @keyframes pop-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .message {
+            animation: pop-in 0.3s ease-out;
+        }
+
+        /* 按鈕脈搏動畫 */
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255, 143, 171, 0.4); }
+            50% { box-shadow: 0 4px 25px rgba(255, 143, 171, 0.8); }
+        }
+
+        .guess-btn:not(:disabled):hover {
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        /* 數字改變時閃一下 */
+        @keyframes flash {
+            0%, 100% { color: #ff6b9d; }
+            50% { color: #ff4081; transform: scale(1.2); }
+        }
+
+        .range-number.changed {
+            animation: flash 0.3s ease-out;
+        }
+
+        /* 輸入正確數字時震動 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .guess-input.shake {
+            animation: shake 0.3s ease-out;
+        }
+
+        /* 遊戲卡片呼吸動畫 */
+        @keyframes breathe {
+            0%, 100% { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); }
+            50% { box-shadow: 0 15px 50px rgba(255, 143, 171, 0.2); }
+        }
+
+        .game-card {
+            animation: breathe 3s ease-in-out infinite;
+        }
+
+        /* 贏了之後卡片特別發光 */
+        .game-card.celebrating {
+            animation: celebrate 0.5s ease-out forwards;
+        }
+
+        @keyframes celebrate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* 再玩一次按鈕 */
+        .restart-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);  /* 紫色漸層 */
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Nunito', sans-serif;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+            margin-top: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        /* 再玩一次按鈕被碰到的時候 */
+        .restart-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
+        }
+
+        /* 再玩一次按鈕被按下去的時候 */
+        .restart-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* 按鈕淡入動畫 */
+        .restart-btn {
+            animation: fade-in 0.5s ease-out;
+        }
+
+        @keyframes fade-in {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 這是 Vue 的地盤，裡面可以用 Vue 的功能 -->
+    <div id="app">
+        <div class="game-card" :class="{ celebrating: status === 'correct' }">
+            <!-- 標題 -->
+            <h1>🐱 猜數字遊戲</h1>
+
+            <!-- 小貓咪的家（真的 CSS 小貓咪） -->
+            <div class="cat-area" :class="{ celebrating: status === 'correct' }">
+                <!-- 星星容器（猜對了會撒星星） -->
+                <div class="stars-container">
+                    <span
+                        v-for="star in stars"
+                        :key="star.id"
+                        class="star"
+                        :style="{
+                            left: star.x + '%',
+                            animationDelay: star.delay + 's'
+                        }"
+                    >{{ star.emoji }}</span>
+                </div>
+
+                <!-- 左邊耳朵 -->
+                <div class="cat-ear left"></div>
+                <div class="cat-ear-inner left"></div>
+                
+                <!-- 右邊耳朵 -->
+                <div class="cat-ear right"></div>
+                <div class="cat-ear-inner right"></div>
+                
+                <!-- 貓咪的臉（用 :class 動態換表情） -->
+                <div class="cat-face" :class="status">
+                    <!-- 眼睛 -->
+                    <div class="cat-eye left"></div>
+                    <div class="cat-eye right"></div>
+                    
+                    <!-- 嘴巴 -->
+                    <div class="cat-mouth"></div>
+                    
+                    <!-- 睡覺符號 -->
+                    <span class="sleep-icon">Z z z</span>
+                </div>
+                
+                <!-- 鬍子 -->
+                <div class="cat-whisker l1"></div>
+                <div class="cat-whisker l2"></div>
+                <div class="cat-whisker l3"></div>
+                <div class="cat-whisker r1"></div>
+                <div class="cat-whisker r2"></div>
+                <div class="cat-whisker r3"></div>
+            </div>
+
+            <!-- 數字範圍顯示 -->
+            <div class="range-display">
+                範圍：
+                <span class="range-number">{{ minValue }}</span>
+                ~
+                <span class="range-number">{{ maxValue }}</span>
+            </div>
+
+            <!-- 輸入框（用 v-model 連結到 guess 盒子） -->
+            <input
+                type="number"
+                class="guess-input"
+                placeholder="輸入數字..."
+                v-model="guess"
+                :disabled="status === 'correct' || status === 'gameOver'"
+            >
+
+            <!-- 猜測按鈕（用 @click 連結到檢查函式） -->
+            <button 
+                class="guess-btn"
+                @click="checkGuess"
+                :disabled="status === 'correct' || status === 'gameOver'"
+            >
+                猜！
+            </button>
+
+            <!-- 訊息顯示區（用 :class 動態換顏色） -->
+            <div class="message" :class="status">
+                {{ statusMessage }}
+            </div>
+
+            <!-- 猜測次數 -->
+            <div class="attempts">
+                猜了 <span class="attempts-count">{{ attempts }}</span> 次
+            </div>
+
+            <!-- 再玩一次按鈕（只有猜對了才顯示） -->
+            <button
+                v-if="status === 'correct'"
+                class="restart-btn"
+                @click="resetGame"
+            >
+                🔄 再玩一次
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 啟動 Vue 程式
+        const app = Vue.createApp({
+            // ===== 盒子們（存放遊戲資料的地方） =====
+            data() {
+                return {
+                    // 電腦選的答案（0~100）
+                    answer: Math.floor(Math.random() * 101),
+                    
+                    // 數字範圍
+                    minValue: 0,
+                    maxValue: 100,
+                    
+                    // 使用者猜測的數字
+                    guess: null,
+                    
+                    // 猜了幾次
+                    attempts: 0,
+                    
+                    // 遊戲狀態（不同狀態有不同的訊息和顏色）
+                    // idle = 還沒開始、tooSmall = 太小、tooBig = 太大、correct = 猜對了、gameOver = 失敗
+                    status: 'idle',
+                    
+                    // 狀態對應的訊息
+                    statusMessage: '試著猜一個數字吧！',
+
+                    // 撒星星的資料
+                    stars: []
+                }
+            },
+
+            // ===== 功能（函式們） =====
+            methods: {
+                // 檢查猜測的函式
+                checkGuess() {
+                    // 把猜的數字變成數字（避免字串問題）
+                    const guessNumber = Number(this.guess)
+
+                    // 檢查：是不是空白的？
+                    if (this.guess === null || this.guess === '') {
+                        this.status = 'idle'
+                        this.statusMessage = '請輸入一個數字喔！'
+                        return
+                    }
+
+                    // 檢查：有沒有超出範圍？
+                    if (guessNumber < this.minValue || guessNumber > this.maxValue) {
+                        this.status = 'idle'
+                        this.statusMessage = `數字要在 ${this.minValue} ~ ${this.maxValue} 之間啦！`
+                        return
+                    }
+
+                    // 次數 +1
+                    this.attempts++
+
+                    // 比較答案
+                    if (guessNumber === this.answer) {
+                        // 猜對了！
+                        this.status = 'correct'
+                        this.statusMessage = `對了！答案就是 ${this.answer}！好棒！🎉`
+                        this.spawnStars()  // 撒星星！
+                    } else if (guessNumber < this.answer) {
+                        // 太小了
+                        this.status = 'too-small'
+                        this.statusMessage = `${guessNumber} 再大一點！👆`
+                        this.minValue = guessNumber + 1  // 範圍變大（往上）
+                    } else {
+                        // 太大了
+                        this.status = 'too-big'
+                        this.statusMessage = `${guessNumber} 再小一點！👇`
+                        this.maxValue = guessNumber - 1  // 範圍變小（往下）
+                    }
+                },
+
+                // 撒星星的功能
+                spawnStars() {
+                    const emojis = ['✨', '⭐', '🌟', '💫', '🎉', '🎊']  // 星星們
+                    this.stars = []  // 先清空
+
+                    // 一次撒 15 顆星星
+                    for (let i = 0; i < 15; i++) {
+                        this.stars.push({
+                            id: i,
+                            emoji: emojis[Math.floor(Math.random() * emojis.length)],
+                            x: Math.random() * 100,    // 隨機位置（0~100%）
+                            delay: Math.random() * 0.5  // 隨機延遲（0~0.5秒）
+                        })
+                    }
+                },
+
+                // 重置遊戲的功能
+                resetGame() {
+                    // 重新選一個答案
+                    this.answer = Math.floor(Math.random() * 101)
+                    
+                    // 範圍回到 0~100
+                    this.minValue = 0
+                    this.maxValue = 100
+                    
+                    // 清空輸入
+                    this.guess = null
+                    
+                    // 次數歸零
+                    this.attempts = 0
+                    
+                    // 狀態回到初始
+                    this.status = 'idle'
+                    this.statusMessage = '試著猜一個數字吧！'
+                    
+                    // 清空星星
+                    this.stars = []
+                }
+            }
+        })
+
+        // 讓 Vue 開始工作
+        app.mount('#app')
+    </script>
+</body>
+</html>
